@@ -69,11 +69,14 @@ public class AdaptiveMediaRepositoryDefiner
 	@Activate
 	protected void activate() {
 		initializeOverridenRepositoryDefiner(_CLASS_NAME);
+		initializeOverridenRepositoryDefiner("com.liferay.portal.repository.portletrepository.PortletRepository");
 	}
 
 	@Deactivate
 	protected void deactivate() {
 		restoreOverridenRepositoryDefiner(_CLASS_NAME);
+		restoreOverridenRepositoryDefiner("com.liferay.portal.repository.portletrepository.PortletRepository");
+
 	}
 
 	private void _deleteAdaptiveMedia(FileEntry fileEntry) {
