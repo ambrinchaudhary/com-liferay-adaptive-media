@@ -14,6 +14,7 @@
 
 package com.liferay.adaptive.media.image.internal.finder;
 
+import com.liferay.adaptive.media.AdaptiveMedia;
 import com.liferay.adaptive.media.AdaptiveMediaAttribute;
 import com.liferay.adaptive.media.finder.AdaptiveMediaQuery;
 import com.liferay.adaptive.media.image.finder.ImageAdaptiveMediaQueryBuilder;
@@ -22,6 +23,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +33,9 @@ import java.util.Optional;
  */
 public class ImageAdaptiveMediaQueryBuilderImpl
 	implements ImageAdaptiveMediaQueryBuilder,
-	   ImageAdaptiveMediaQueryBuilder.AdaptiveMediaAttributeQueryBuilder {
+			   ImageAdaptiveMediaQueryBuilder.FuzzySortStep,
+			   ImageAdaptiveMediaQueryBuilder.InitialStep,
+			   ImageAdaptiveMediaQueryBuilder.StrictSortStep {
 
 	public static final
 		AdaptiveMediaQuery<FileVersion, ImageAdaptiveMediaProcessor> QUERY =
@@ -39,40 +43,7 @@ public class ImageAdaptiveMediaQueryBuilderImpl
 			};
 
 	@Override
-	public AdaptiveMediaQuery<FileVersion, ImageAdaptiveMediaProcessor>
-		allForFileEntry(FileEntry fileEntry) {
-
-		if (fileEntry == null) {
-			throw new IllegalArgumentException("File entry cannot be null");
-		}
-
-		_fileEntry = fileEntry;
-
-		return QUERY;
-	}
-
-	@Override
-	public AdaptiveMediaQuery<FileVersion, ImageAdaptiveMediaProcessor>
-		allForVersion(FileVersion fileVersion) {
-
-		if (fileVersion == null) {
-			throw new IllegalArgumentException("File version cannot be null");
-		}
-
-		_fileVersion = fileVersion;
-
-		return QUERY;
-	}
-
-	@Override
-	public AdaptiveMediaQuery<FileVersion, ImageAdaptiveMediaProcessor> done() {
-		return QUERY;
-	}
-
-	@Override
-	public AdaptiveMediaAttributeQueryBuilder forFileEntry(
-		FileEntry fileEntry) {
-
+	public InitialStep allForFileEntry(FileEntry fileEntry) {
 		if (fileEntry == null) {
 			throw new IllegalArgumentException("File entry cannot be null");
 		}
@@ -83,9 +54,34 @@ public class ImageAdaptiveMediaQueryBuilderImpl
 	}
 
 	@Override
-	public AdaptiveMediaAttributeQueryBuilder forVersion(
-		FileVersion fileVersion) {
+	public InitialStep allForVersion(FileVersion fileVersion) {
+		if (fileVersion == null) {
+			throw new IllegalArgumentException("File version cannot be null");
+		}
 
+		_fileVersion = fileVersion;
+
+		return this;
+	}
+
+	@Override
+	public AdaptiveMediaQuery<FileVersion, ImageAdaptiveMediaProcessor> done() {
+		return QUERY;
+	}
+
+	@Override
+	public InitialStep forFileEntry(FileEntry fileEntry) {
+		if (fileEntry == null) {
+			throw new IllegalArgumentException("File entry cannot be null");
+		}
+
+		_fileEntry = fileEntry;
+
+		return this;
+	}
+
+	@Override
+	public InitialStep forVersion(FileVersion fileVersion) {
 		if (fileVersion == null) {
 			throw new IllegalArgumentException("File version cannot be null");
 		}
@@ -99,6 +95,20 @@ public class ImageAdaptiveMediaQueryBuilderImpl
 		getAttributes() {
 
 		return _attributes;
+	}
+
+	public Comparator<AdaptiveMedia<ImageAdaptiveMediaProcessor>>
+		getComparator() {
+
+		if (!_sortCriteria.isEmpty()) {
+			return new AdaptiveMediaAttributeComparator(_sortCriteria);
+		}
+
+		if (!_attributes.isEmpty()) {
+			return new AdaptiveMediaPropertyDistanceComparator(_attributes);
+		}
+
+		return (v1, v2) -> 0;
 	}
 
 	public FileVersion getFileVersion() throws PortalException {
@@ -119,7 +129,22 @@ public class ImageAdaptiveMediaQueryBuilderImpl
 		return false;
 	}
 
-	public <V> AdaptiveMediaAttributeQueryBuilder with(
+	@Override
+	public <V> StrictSortStep orderBy(
+		AdaptiveMediaAttribute<ImageAdaptiveMediaProcessor, V> attribute,
+		boolean asc) {
+
+		if (attribute == null) {
+			throw new IllegalArgumentException(
+				"Adaptive media attribute cannot be null");
+		}
+
+		_sortCriteria.put(attribute, asc);
+
+		return this;
+	}
+
+	public <V> FuzzySortStep with(
 		AdaptiveMediaAttribute<ImageAdaptiveMediaProcessor, V> attribute,
 		Optional<V> valueOptional) {
 
@@ -134,7 +159,7 @@ public class ImageAdaptiveMediaQueryBuilderImpl
 	}
 
 	@Override
-	public <V> AdaptiveMediaAttributeQueryBuilder with(
+	public <V> FuzzySortStep with(
 		AdaptiveMediaAttribute<ImageAdaptiveMediaProcessor, V> attribute,
 		V value) {
 
@@ -152,5 +177,7 @@ public class ImageAdaptiveMediaQueryBuilderImpl
 		_attributes = new LinkedHashMap<>();
 	private FileEntry _fileEntry;
 	private FileVersion _fileVersion;
+	private Map<AdaptiveMediaAttribute<ImageAdaptiveMediaProcessor, ?>, Boolean>
+		_sortCriteria = new LinkedHashMap<>();
 
 }

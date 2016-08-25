@@ -77,7 +77,7 @@ public class ImageAdaptiveMediaFinderImpl implements ImageAdaptiveMediaFinder {
 
 		if (query != ImageAdaptiveMediaQueryBuilderImpl.QUERY) {
 			throw new IllegalArgumentException(
-				"Only queries built by the provided query build are valid.");
+				"Only queries built by the provided query builder are valid.");
 		}
 
 		FileVersion fileVersion = queryBuilder.getFileVersion();
@@ -93,10 +93,6 @@ public class ImageAdaptiveMediaFinderImpl implements ImageAdaptiveMediaFinder {
 		BiFunction<FileVersion, ImageAdaptiveMediaConfigurationEntry, URI>
 			uriFactory = _getURIFactory(queryBuilder);
 
-		AdaptiveMediaPropertyDistanceComparator comparator =
-			new AdaptiveMediaPropertyDistanceComparator(
-				queryBuilder.getAttributes());
-
 		return configurationEntries.stream().
 			filter(
 				configurationEntry ->
@@ -105,7 +101,7 @@ public class ImageAdaptiveMediaFinderImpl implements ImageAdaptiveMediaFinder {
 				configurationEntry ->
 					_createMedia(
 						fileVersion, uriFactory, configurationEntry)).
-			sorted(comparator);
+			sorted(queryBuilder.getComparator());
 	}
 
 	@Reference(unbind = "-")

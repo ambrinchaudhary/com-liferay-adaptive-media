@@ -12,11 +12,10 @@
  * details.
  */
 
-package com.liferay.adaptive.media.image.internal.processor;
+package com.liferay.adaptive.media.image.processor;
 
 import com.liferay.adaptive.media.AdaptiveMediaAttribute;
 import com.liferay.adaptive.media.AdaptiveMediaRuntimeException;
-import com.liferay.adaptive.media.image.processor.ImageAdaptiveMediaProcessor;
 
 /**
  * @author Adolfo Pérez
@@ -36,7 +35,7 @@ public final class ImageAdaptiveMediaAttribute {
 				ImageAdaptiveMediaAttribute::_intDistance);
 
 	private static int _intDistance(int i1, int i2) {
-		return Math.abs(i1 - i2);
+		return i1 - i2;
 	}
 
 	private static int _parseInt(String value) {
