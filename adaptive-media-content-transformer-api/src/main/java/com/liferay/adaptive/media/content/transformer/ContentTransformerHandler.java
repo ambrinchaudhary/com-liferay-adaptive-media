@@ -47,7 +47,7 @@ public class ContentTransformerHandler {
 					transformedContent);
 			}
 			catch (Exception e) {
-				_log.error(e);
+				_log.error("Error processing content", e);
 			}
 		}
 
