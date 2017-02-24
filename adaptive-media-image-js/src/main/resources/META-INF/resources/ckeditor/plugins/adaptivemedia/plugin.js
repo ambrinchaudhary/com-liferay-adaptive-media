@@ -33,6 +33,19 @@
 						}
 					}
 				);
+
+				editor.on(
+					'imageUploaded',
+					function(event) {
+						var fileEntryId = event.data.fileEntryId;
+						var imageNode = event.data.el;
+						var returnType = event.data.uploadImageReturnType;
+
+						if (returnType === STR_ADAPTIVE_MEDIA_RETURN_TYPE) {
+							imageNode.attr('data-fileEntryId', fileEntryId);
+						}
+					}
+				);
 			},
 
 			_onSelectedImageChange: function(editor, imageSrc, selectedItem) {
