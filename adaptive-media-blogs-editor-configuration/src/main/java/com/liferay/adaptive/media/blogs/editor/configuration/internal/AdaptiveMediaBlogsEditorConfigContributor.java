@@ -65,7 +65,7 @@ public class AdaptiveMediaBlogsEditorConfigContributor
 		String imgTagRule = "img[*](*);";
 
 		if (Validator.isNotNull(allowedContent)) {
-			allowedContent = allowedContent + StringPool.SPACE + imgTagRule;
+			allowedContent += StringPool.SPACE + imgTagRule;
 		}
 		else {
 			allowedContent = imgTagRule;
