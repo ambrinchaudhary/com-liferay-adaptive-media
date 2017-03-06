@@ -15,9 +15,7 @@
 package com.liferay.adaptive.media.image.internal.processor.util;
 
 import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Metadata;
-import com.drew.metadata.MetadataException;
 import com.drew.metadata.exif.ExifIFD0Directory;
 
 import com.liferay.adaptive.media.AdaptiveMediaRuntimeException;
@@ -58,7 +56,7 @@ public class TiffOrientationTransformer {
 				_getTiffOrientationValue(inputStreamSupplier);
 
 			if (tiffOrientationValueOptional.isPresent()) {
-				return _doTransform(
+				return _transform(
 					inputStreamSupplier, tiffOrientationValueOptional.get());
 			}
 
@@ -67,45 +65,6 @@ public class TiffOrientationTransformer {
 		catch (IOException ioe) {
 			throw new AdaptiveMediaRuntimeException.IOException(ioe);
 		}
-	}
-
-	private RenderedImage _doTransform(
-			Supplier<InputStream> inputStreamSupplier, int tiffOrientationValue)
-		throws IOException {
-
-		RenderedImage renderedImage = RenderedImageUtil.readImage(
-			inputStreamSupplier.get());
-
-		if (tiffOrientationValue == _ORIENTATION_VALUE_HORIZONTAL_NORMAL) {
-			return renderedImage;
-		}
-		else if (tiffOrientationValue == _ORIENTATION_VALUE_MIRROR_HORIZONTAL) {
-			return _flipHorizontal(renderedImage);
-		}
-		else if (tiffOrientationValue ==
-					_ORIENTATION_VALUE_MIRROR_HORIZONTAL_ROTATE_90_CW) {
-
-			return _flipVertical(_rotate(renderedImage, 90));
-		}
-		else if (tiffOrientationValue ==
-					_ORIENTATION_VALUE_MIRROR_HORIZONTAL_ROTATE_270_CW) {
-
-			return _flipVertical(_rotate(renderedImage, 270));
-		}
-		else if (tiffOrientationValue == _ORIENTATION_VALUE_MIRROR_VERTICAL) {
-			return _flipVertical(renderedImage);
-		}
-		else if (tiffOrientationValue == _ORIENTATION_VALUE_ROTATE_90_CW) {
-			return _rotate(renderedImage, 90);
-		}
-		else if (tiffOrientationValue == _ORIENTATION_VALUE_ROTATE_180) {
-			return _rotate(renderedImage, 180);
-		}
-		else if (tiffOrientationValue == _ORIENTATION_VALUE_ROTATE_270_CW) {
-			return _rotate(renderedImage, 270);
-		}
-
-		return renderedImage;
 	}
 
 	private RenderedImage _flipHorizontal(RenderedImage renderedImage) {
@@ -186,8 +145,10 @@ public class TiffOrientationTransformer {
 			return Optional.of(
 				exifIFD0Directory.getInt(ExifIFD0Directory.TAG_ORIENTATION));
 		}
-		catch (ImageProcessingException | IOException | MetadataException e) {
-			_log.error(e, e);
+		catch (Exception e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(e, e);
+			}
 		}
 
 		return Optional.empty();
@@ -226,6 +187,45 @@ public class TiffOrientationTransformer {
 		graphics.dispose();
 
 		return rotatedBufferedImage;
+	}
+
+	private RenderedImage _transform(
+			Supplier<InputStream> inputStreamSupplier, int tiffOrientationValue)
+		throws IOException {
+
+		RenderedImage renderedImage = RenderedImageUtil.readImage(
+			inputStreamSupplier.get());
+
+		if (tiffOrientationValue == _ORIENTATION_VALUE_HORIZONTAL_NORMAL) {
+			return renderedImage;
+		}
+		else if (tiffOrientationValue == _ORIENTATION_VALUE_MIRROR_HORIZONTAL) {
+			return _flipHorizontal(renderedImage);
+		}
+		else if (tiffOrientationValue ==
+					_ORIENTATION_VALUE_MIRROR_HORIZONTAL_ROTATE_90_CW) {
+
+			return _flipVertical(_rotate(renderedImage, 90));
+		}
+		else if (tiffOrientationValue ==
+					_ORIENTATION_VALUE_MIRROR_HORIZONTAL_ROTATE_270_CW) {
+
+			return _flipVertical(_rotate(renderedImage, 270));
+		}
+		else if (tiffOrientationValue == _ORIENTATION_VALUE_MIRROR_VERTICAL) {
+			return _flipVertical(renderedImage);
+		}
+		else if (tiffOrientationValue == _ORIENTATION_VALUE_ROTATE_90_CW) {
+			return _rotate(renderedImage, 90);
+		}
+		else if (tiffOrientationValue == _ORIENTATION_VALUE_ROTATE_180) {
+			return _rotate(renderedImage, 180);
+		}
+		else if (tiffOrientationValue == _ORIENTATION_VALUE_ROTATE_270_CW) {
+			return _rotate(renderedImage, 270);
+		}
+
+		return renderedImage;
 	}
 
 	private static final int _ORIENTATION_VALUE_HORIZONTAL_NORMAL = 1;

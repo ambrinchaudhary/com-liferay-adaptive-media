@@ -1,6 +1,7 @@
 .gradle/
 build/
 classes/
+.idea/
 test-classes/
 test-coverage/
 test-results/
