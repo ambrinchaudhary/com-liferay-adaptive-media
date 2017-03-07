@@ -17,12 +17,18 @@ package com.liferay.adaptive.media.web.internal.portlet.action;
 import com.liferay.adaptive.media.ImageAdaptiveMediaConfigurationException;
 import com.liferay.adaptive.media.image.configuration.ImageAdaptiveMediaConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.ImageAdaptiveMediaConfigurationHelper;
+import com.liferay.adaptive.media.image.service.AdaptiveMediaImageLocalService;
 import com.liferay.adaptive.media.web.constants.AdaptiveMediaPortletKeys;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,16 +78,52 @@ public class EditImageConfigurationEntryMVCActionCommand
 					getImageAdaptiveMediaConfigurationEntry(
 						themeDisplay.getCompanyId(), uuid);
 
-		if (configurationEntryOptional.isPresent()) {
-			_imageAdaptiveMediaConfigurationHelper.
-				deleteImageAdaptiveMediaConfigurationEntry(
-					themeDisplay.getCompanyId(), uuid);
+		boolean automaticUuid = ParamUtil.getBoolean(
+			actionRequest, "automaticUuid");
+
+		String newUuid = null;
+
+		if (automaticUuid) {
+			newUuid = _getAutomaticUuid(themeDisplay.getCompanyId(), name);
+		}
+		else {
+			newUuid = ParamUtil.getString(actionRequest, "newUuid");
 		}
 
 		try {
-			_imageAdaptiveMediaConfigurationHelper.
-				addImageAdaptiveMediaConfigurationEntry(
-					themeDisplay.getCompanyId(), name, name, properties);
+			if (configurationEntryOptional.isPresent()) {
+				ImageAdaptiveMediaConfigurationEntry configurationEntry =
+					configurationEntryOptional.get();
+
+				if (!_isConfigurationEntryEditable(
+						themeDisplay.getCompanyId(),
+						configurationEntryOptional.get())) {
+
+					newUuid = configurationEntry.getUUID();
+
+					properties = configurationEntry.getProperties();
+				}
+
+				_imageAdaptiveMediaConfigurationHelper.
+					updateImageAdaptiveMediaConfigurationEntry(
+						themeDisplay.getCompanyId(), uuid, name, newUuid,
+						properties);
+			}
+			else {
+				ImageAdaptiveMediaConfigurationEntry configurationEntry =
+					_imageAdaptiveMediaConfigurationHelper.
+						addImageAdaptiveMediaConfigurationEntry(
+							themeDisplay.getCompanyId(), name, newUuid,
+							properties);
+
+				boolean addHighResolution = ParamUtil.getBoolean(
+					actionRequest, "addHighResolution");
+
+				if (addHighResolution) {
+					_addHighResolutionConfigurationEntry(
+						themeDisplay.getCompanyId(), configurationEntry);
+				}
+			}
 		}
 		catch (ImageAdaptiveMediaConfigurationException iamce) {
 			SessionErrors.add(actionRequest, iamce.getClass());
@@ -97,7 +139,72 @@ public class EditImageConfigurationEntryMVCActionCommand
 			imageAdaptiveMediaConfigurationHelper;
 	}
 
+	private void _addHighResolutionConfigurationEntry(
+			long companyId,
+			ImageAdaptiveMediaConfigurationEntry configurationEntry)
+		throws ImageAdaptiveMediaConfigurationException, IOException {
+
+		Map<String, String> properties = configurationEntry.getProperties();
+
+		int doubleMaxHeight =
+			GetterUtil.getInteger(properties.get("max-height")) * 2;
+		int doubleMaxWidth =
+			GetterUtil.getInteger(properties.get("max-width")) * 2;
+
+		properties.put("max-height", String.valueOf(doubleMaxHeight));
+		properties.put("max-width", String.valueOf(doubleMaxWidth));
+
+		String name = configurationEntry.getName();
+		String uuid = configurationEntry.getUUID();
+
+		_imageAdaptiveMediaConfigurationHelper.
+			addImageAdaptiveMediaConfigurationEntry(
+				companyId, name.concat("-2x"), uuid.concat("-2x"), properties);
+	}
+
+	private String _getAutomaticUuid(long companyId, String name) {
+		String normalizedName = FriendlyURLNormalizerUtil.normalize(name);
+
+		String curUuid = normalizedName;
+
+		for (int i = 1;; i++) {
+			Optional<ImageAdaptiveMediaConfigurationEntry>
+				imageAdaptiveMediaConfigurationEntryOptional =
+					_imageAdaptiveMediaConfigurationHelper.
+						getImageAdaptiveMediaConfigurationEntry(
+							companyId, curUuid);
+
+			if (!imageAdaptiveMediaConfigurationEntryOptional.isPresent()) {
+				break;
+			}
+
+			String suffix = StringPool.DASH + i;
+
+			curUuid = normalizedName + suffix;
+		}
+
+		return curUuid;
+	}
+
+	private boolean _isConfigurationEntryEditable(
+		long companyId,
+		ImageAdaptiveMediaConfigurationEntry configurationEntry) {
+
+		int adaptiveMediaImagesCount =
+			_imageLocalService.getAdaptiveMediaImagesCount(
+				companyId, configurationEntry.getUUID());
+
+		if (adaptiveMediaImagesCount == 0) {
+			return true;
+		}
+
+		return false;
+	}
+
 	private ImageAdaptiveMediaConfigurationHelper
 		_imageAdaptiveMediaConfigurationHelper;
+
+	@Reference
+	private AdaptiveMediaImageLocalService _imageLocalService;
 
 }

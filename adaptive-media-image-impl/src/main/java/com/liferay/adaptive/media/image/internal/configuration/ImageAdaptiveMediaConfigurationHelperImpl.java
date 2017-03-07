@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.settings.SettingsException;
 import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 
 import java.io.IOException;
@@ -61,23 +62,25 @@ public class ImageAdaptiveMediaConfigurationHelperImpl
 				Map<String, String> properties)
 		throws ImageAdaptiveMediaConfigurationException, IOException {
 
+		String normalizedUuid = FriendlyURLNormalizerUtil.normalize(uuid);
+
 		_checkProperties(properties);
 
 		Collection<ImageAdaptiveMediaConfigurationEntry> configurationEntries =
 			getImageAdaptiveMediaConfigurationEntries(
 				companyId, configurationEntry -> true);
 
-		_checkDuplicates(configurationEntries, uuid);
+		_checkDuplicates(configurationEntries, normalizedUuid);
 
 		List<ImageAdaptiveMediaConfigurationEntry> updatedConfigurationEntries =
 			configurationEntries.stream().filter(
 				configurationEntry ->
-					!configurationEntry.getUUID().equals(uuid)).collect(
-				Collectors.toList());
+					!configurationEntry.getUUID().equals(normalizedUuid)).
+				collect(Collectors.toList());
 
 		ImageAdaptiveMediaConfigurationEntry configurationEntry =
 			new ImageAdaptiveMediaConfigurationEntryImpl(
-				name, uuid, properties, true);
+				name, normalizedUuid, properties, true);
 
 		updatedConfigurationEntries.add(configurationEntry);
 
@@ -305,14 +308,53 @@ public class ImageAdaptiveMediaConfigurationHelperImpl
 	@Override
 	public ImageAdaptiveMediaConfigurationEntry
 			updateImageAdaptiveMediaConfigurationEntry(
-				long companyId, String name, String uuid,
+				long companyId, String oldUuid, String name, String newUuid,
 				Map<String, String> properties)
 		throws ImageAdaptiveMediaConfigurationException, IOException {
 
-		forceDeleteImageAdaptiveMediaConfigurationEntry(companyId, uuid);
+		String normalizedUuid = FriendlyURLNormalizerUtil.normalize(newUuid);
 
-		return addImageAdaptiveMediaConfigurationEntry(
-			companyId, name, uuid, properties);
+		_checkProperties(properties);
+
+		Collection<ImageAdaptiveMediaConfigurationEntry> configurationEntries =
+			getImageAdaptiveMediaConfigurationEntries(
+				companyId, configurationEntry -> true);
+
+		Optional<ImageAdaptiveMediaConfigurationEntry>
+			oldConfigurationEntryOptional =
+				configurationEntries.stream().filter(
+					configurationEntry -> configurationEntry.getUUID().equals(
+						oldUuid)).findFirst();
+
+		if (!oldConfigurationEntryOptional.isPresent()) {
+			throw new ImageAdaptiveMediaConfigurationException.
+				NoSuchImageAdaptiveMediaConfigurationEntryException(
+					"{uuid=" + oldUuid + "}");
+		}
+
+		ImageAdaptiveMediaConfigurationEntry oldConfigurationEntry =
+			oldConfigurationEntryOptional.get();
+
+		if (!oldUuid.equals(normalizedUuid)) {
+			_checkDuplicates(configurationEntries, normalizedUuid);
+		}
+
+		List<ImageAdaptiveMediaConfigurationEntry> updatedConfigurationEntries =
+			configurationEntries.stream().filter(
+				configurationEntry ->
+					!configurationEntry.getUUID().equals(oldUuid)).collect(
+				Collectors.toList());
+
+		ImageAdaptiveMediaConfigurationEntry configurationEntry =
+			new ImageAdaptiveMediaConfigurationEntryImpl(
+				name, normalizedUuid, properties,
+				oldConfigurationEntry.isEnabled());
+
+		updatedConfigurationEntries.add(configurationEntry);
+
+		_updateConfiguration(companyId, updatedConfigurationEntries);
+
+		return configurationEntry;
 	}
 
 	@Reference(unbind = "-")
