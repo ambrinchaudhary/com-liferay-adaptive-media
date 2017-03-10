@@ -83,9 +83,22 @@ if (!reindexSingleBackgroundTasks.isEmpty()) {
 			<portlet:param name="entryUuid" value="<%= String.valueOf(configurationEntry.getUUID()) %>" />
 		</portlet:actionURL>
 
+		<%
+		String backgroundTaskUrl = optimizeImagesURL.toString();
+		String uuid = String.valueOf(configurationEntry.getUUID());
+
+		String onClick = renderResponse.getNamespace() + "optimizeRemaining('" + uuid + "', '" + backgroundTaskUrl + "');";
+
+		int percentage = AdaptiveMediaImageLocalServiceUtil.getPercentage(themeDisplay.getCompanyId(), configurationEntry.getUUID());
+
+		String cssClass = (!configurationEntry.isEnabled() || percentage == 100) ? "disabled" : "";
+		%>
+
 		<liferay-ui:icon
+			cssClass="<%= cssClass %>"
 			message="optimize-remaining"
-			url="<%= optimizeImagesURL %>"
+			onClick="<%= onClick %>"
+			url="javascript:;"
 		/>
 
 		<portlet:actionURL name="/adaptive_media/delete_image_configuration_entry" var="deleteImageConfigurationEntryURL">

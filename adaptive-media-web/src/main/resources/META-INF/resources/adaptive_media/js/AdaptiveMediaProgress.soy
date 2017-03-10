@@ -1,0 +1,23 @@
+{namespace AdaptiveMediaProgress}
+
+/**
+ * It renders a progressbar and a loading icon.
+ *
+ * @param progressBarClass
+ * @param progressBarLabel
+ * @param progressBarValue
+ * @param? id
+ * @param showLoadingIndicator
+ */
+{template .render}
+	<div id="{$id}">
+		<div class="progress-container">
+			{call ProgressBar.render}
+				{param barClass: $progressBarClass /}
+				{param label: $progressBarLabel /}
+				{param value: $progressBarValue /}
+			{/call}
+		</div>
+		<div class="{$showLoadingIndicator ? '' : 'hide '}loading-icon loading-icon-sm"></div>
+	</div>
+{/template}
