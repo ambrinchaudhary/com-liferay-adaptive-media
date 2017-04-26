@@ -200,7 +200,10 @@ PortletURL portletURL = renderResponse.createRenderURL();
 							);
 
 							<c:if test="<%= ((optimizeImagesAllConfigurationsBackgroundTasksCount > 0) && configurationEntry.isEnabled()) || currentBackgroundTaskConfigurationEntryUuids.contains(uuid) %>">
-								component.startProgress();
+								setTimeout(
+									() => component.startProgress(),
+									0
+								);
 							</c:if>
 						</aui:script>
 					</liferay-ui:search-container-column-text>
@@ -229,11 +232,9 @@ PortletURL portletURL = renderResponse.createRenderURL();
 						value='<%= maxHeight.equals("0") ? LanguageUtil.get(request, "auto") : maxHeight + "px" %>'
 					/>
 
-					<c:if test="<%= optimizeImagesAllConfigurationsBackgroundTasksCount == 0 %>">
-						<liferay-ui:search-container-column-jsp
-							path="/adaptive_media/image_configuration_entry_action.jsp"
-						/>
-					</c:if>
+					<liferay-ui:search-container-column-jsp
+						path="/adaptive_media/image_configuration_entry_action.jsp"
+					/>
 				</liferay-ui:search-container-row>
 
 				<liferay-ui:search-iterator displayStyle="list" markupView="lexicon" />
