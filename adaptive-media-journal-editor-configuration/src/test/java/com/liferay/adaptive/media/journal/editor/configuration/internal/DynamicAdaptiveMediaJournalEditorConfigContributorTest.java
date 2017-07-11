@@ -249,7 +249,9 @@ public class DynamicAdaptiveMediaJournalEditorConfigContributorTest
 	}
 
 	@Test
-	public void testImgIsAllowedContent() throws Exception {
+	public void testImgIsAllowedContentWhenAllowedContentIsNotPresent()
+		throws Exception {
+
 		JSONObject originalJSONObject = JSONFactoryUtil.createJSONObject();
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(

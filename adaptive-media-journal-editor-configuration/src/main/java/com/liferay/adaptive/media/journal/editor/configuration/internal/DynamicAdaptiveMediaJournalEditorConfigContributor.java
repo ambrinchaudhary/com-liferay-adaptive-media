@@ -62,9 +62,10 @@ public class DynamicAdaptiveMediaJournalEditorConfigContributor
 
 		String allowedContent = jsonObject.getString("allowedContent");
 
-		if (Validator.isNotNull(allowedContent) &&
-			!allowedContent.equals(Boolean.TRUE.toString())) {
-
+		if (Validator.isNull(allowedContent)) {
+			allowedContent = _IMG_TAG_RULE;
+		}
+		else if (!allowedContent.equals(Boolean.TRUE.toString())) {
 			allowedContent += StringPool.SPACE + _IMG_TAG_RULE;
 		}
 
